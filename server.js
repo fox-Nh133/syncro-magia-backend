@@ -66,6 +66,11 @@ io.on('connection', (socket) => {
     io.emit('performance_start', { startTime: data.startTime });
   });
 
+  // 即時点灯（管理者 App②）
+  socket.on('instant_trigger', (data) => {
+    io.emit('instant_trigger', data);
+  });
+
   // 切断処理
   socket.on('disconnect', () => {
     clientIndexMap.delete(socket.id);
