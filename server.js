@@ -17,7 +17,14 @@ const PORT = process.env.PORT || 3000;
 
 // { socketId -> index } の対応マップ
 const clientIndexMap = new Map();
-let nextIndex = 0;
+
+// 現在使われていない最小の整数を返す
+function getNextIndex() {
+  const used = new Set(clientIndexMap.values());
+  let i = 0;
+  while (used.has(i)) i++;
+  return i;
+}
 
 function getTotal() {
   return clientIndexMap.size;
@@ -36,7 +43,7 @@ app.get('/', (req, res) => {
 
 io.on('connection', (socket) => {
   // インデックスを割り当て
-  const index = nextIndex++;
+  const index = getNextIndex();
   clientIndexMap.set(socket.id, index);
 
   // 接続クライアントに index と total を送信
