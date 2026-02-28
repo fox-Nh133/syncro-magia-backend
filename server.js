@@ -18,10 +18,10 @@ const PORT = process.env.PORT || 3000;
 // { socketId -> index } の対応マップ
 const clientIndexMap = new Map();
 
-// 現在使われていない最小の整数を返す
+// 現在使われていない最小の整数を返す（1開始）
 function getNextIndex() {
   const used = new Set(clientIndexMap.values());
-  let i = 0;
+  let i = 1;
   while (used.has(i)) i++;
   return i;
 }
@@ -54,10 +54,8 @@ io.on('connection', (socket) => {
     socket.emit('connection', { index, total: getTotal() });
   }
 
-  // Player 接続時のみ total をブロードキャスト
-  if (!isAdmin) {
-    broadcastTotal();
-  }
+  // 接続時は管理者・参加者問わず最新の参加者数をブロードキャスト
+  broadcastTotal();
 
   // キャッシュ済み演出データがあれば新規接続者へ配信
   if (cachedPerformance !== null) {
@@ -87,10 +85,9 @@ io.on('connection', (socket) => {
 
   // 切断処理
   socket.on('disconnect', () => {
-    if (clientIndexMap.delete(socket.id)) {
-      // Player が切断した場合のみ total を更新
-      broadcastTotal();
-    }
+    clientIndexMap.delete(socket.id);
+    // 管理者・参加者問わず最新の参加者数をブロードキャスト
+    broadcastTotal();
   });
 });
 
