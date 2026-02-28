@@ -42,15 +42,22 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-  // インデックスを割り当て
-  const index = getNextIndex();
-  clientIndexMap.set(socket.id, index);
+  const role = socket.handshake.auth?.role;
+  const isAdmin = role === 'admin';
 
-  // 接続クライアントに index と total を送信
-  socket.emit('connection', { index, total: getTotal() });
+  // Player のみインデックスを割り当て
+  if (!isAdmin) {
+    const index = getNextIndex();
+    clientIndexMap.set(socket.id, index);
 
-  // 全クライアントに total をブロードキャスト
-  broadcastTotal();
+    // 接続クライアントに index と total を送信
+    socket.emit('connection', { index, total: getTotal() });
+  }
+
+  // Player 接続時のみ total をブロードキャスト
+  if (!isAdmin) {
+    broadcastTotal();
+  }
 
   // キャッシュ済み演出データがあれば新規接続者へ配信
   if (cachedPerformance !== null) {
@@ -80,8 +87,10 @@ io.on('connection', (socket) => {
 
   // 切断処理
   socket.on('disconnect', () => {
-    clientIndexMap.delete(socket.id);
-    broadcastTotal();
+    if (clientIndexMap.delete(socket.id)) {
+      // Player が切断した場合のみ total を更新
+      broadcastTotal();
+    }
   });
 });
 
